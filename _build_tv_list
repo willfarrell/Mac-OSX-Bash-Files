@@ -1,0 +1,42 @@
+#!/bin/sh
+
+dir="/Volumes/Media/TV Shows"
+file="_tv_list.txt"
+
+cd "$dir" # enables the use of $(ls -d -1 */)
+
+count=$(ls -p "$dir" | wc -l) #wc :: word count; -l :: # of lines
+count=$((count-1))
+
+echo "$count TV Shows\r" > "$dir/$file"
+echo "\r" >> "$dir/$file"
+
+#!/bin/bash
+
+IFS=$'\n';for s in $(ls -d -1 */); do # $(ls -p -1 $dir)
+  echo "Processing $s"
+  
+  count=$(ls -p -1 "$dir/$s" | wc -l)
+	count=$((count+0))
+  season_count=$(ls -p -1 "$dir/$s" | grep -c 'Season')
+  movie_count=$((count-season_count))
+  
+  #channel=$("$s" | grep -c 'Channel')
+  channel=0
+  if [ "$channel" == 1 ]; then #disabled
+	  echo "${s%/} (Channel - $count Specials)\r" >> "$dir/$file"
+  elif [ "$season_count" -gt 0 ]; then
+    if [ "$movie_count" == 0 ]; then
+      echo "${s%/} ($season_count Seasons)\r" >> "$dir/$file"
+    else
+      echo "${s%/} ($season_count Seasons, $movie_count Movies)\r" >> "$dir/$file"
+    fi
+  elif [ "$count" -lt 15 ]; then
+    echo "${s%/} (Mini-Series - $count Parts)\r" >> "$dir/$file"
+  else
+  	echo "${s%/} (Collection - $count Videos)\r" >> "$dir/$file"
+  fi
+ 
+done
+
+
