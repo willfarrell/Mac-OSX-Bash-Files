@@ -1,0 +1,35 @@
+#!/bin/sh
+
+dir="/Volumes/Media/Movies"
+file="_movie_list.txt"
+
+cd $dir
+
+list=$(ls -R -p -1 $dir)
+#list_dir=$(ls -d -1 */) #-d :: do not descend into sub-directories; */ :: all ending with /
+
+count=$(ls -R -p $dir | wc -l) #wc :: word count; -l :: # of lines
+count=$((count+0))
+count_dir=$(ls -d */ | wc -l) #dir in list
+count_dir=$((count_dir+0))
+
+count_blank=$(ls -R -p -1 $dir | grep -c '^$')
+count_multipart_CD=$(ls -R -p -1 $dir | grep -c 'CD2.avi$')
+count_multipart_Part=$(ls -R -p -1 $dir | grep -c 'Part 2.avi$')
+count_dir_header=$(ls -R -p -1 $dir | grep -c ':$')
+
+count_files=$((count-count_dir-count_blank-count_multipart_CD-count_multipart_Part-count_dir_header-1)) #-1 for results file
+
+echo "$count_files Movies" > "$dir/$file"
+echo "$count_dir Collections/Series (3+ Movies)" >> "$dir/$file"
+#echo "$dir has $count total" > "$dir/$file"
+#echo "$count_dir_header Directory Headers" >> "$dir/$file"
+#echo "$count_blank Blank Lines" >> "$dir/$file"
+#echo "$count_multipart Movies in 2 parts" >> "$dir/$file"
+#echo "dirs:" >> "$dir/$file"
+#echo $list_dir >> "$dir/$file"
+#echo "files:" >> "$dir/$file"
+echo "" >> "$dir/$file"
+ls -R -p -1 $dir >> "$dir/$file"
+
+
