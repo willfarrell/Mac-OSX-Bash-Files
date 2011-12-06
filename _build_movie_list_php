@@ -1,0 +1,141 @@
+#!/usr/bin/php
+<?php
+
+$dir = "/Volumes/Media/Movies";
+$file = "_movie_list.txt";
+
+$make = new Make_Movie_List;
+$count = 0;
+$list = $make->searchDir($dir, $count);
+
+$data = "Total Movies: $count\n\n";
+echo $data;
+$data .= $make->printList($list);
+
+$make->save($dir."/".$file, $data);
+
+class Make_Movie_List
+{
+	var $version = "0.0.1";
+	var $debug = false;
+	
+	// Extentions list from http://en.wikipedia.org/wiki/List_of_file_formats#Video
+	var $video_extensions = array('aaf', '3gp', 'avi', 'flv', 'm1v', 'm2v', 'm4v', 'mkv', 'mov', 'mpeg', 'mpg', 'ogg', 'wmv');
+	
+	var $sub_extensions = array('srt', 'sub');
+	var $last_file = '';
+	
+	/**
+	 * search dir and make list
+	 * 
+	 * @param string $path a directory path
+	 * 
+	 * @return null
+	 */
+	function searchDir($path, &$count)
+	{
+		$list = array();
+		$dir = scandir($path);
+		$size = count($dir);
+		for($i=0; $i<$size; $i++) {
+			// ignore symbolic links and hidden files
+			if ( preg_match("/^\./", $dir[$i]) ) {
+				continue;
+			}
+			$file_full_path = $path."/".$dir[$i];
+			$path_parts = pathinfo($dir[$i]);
+			
+			if (is_dir($file_full_path)) {
+				/*
+				 * Is a directory, call recursion
+				 */
+				$subcount = 0;
+				$sublist = $this->searchDir($file_full_path, $subcount);
+				$count += $subcount;
+				$list[] = array(
+					'title' => $path_parts['filename'],
+					'count' => $subcount,
+					'list' => $sublist
+				);
+			} else if (in_array($path_parts['extension'], $this->video_extensions)) {
+				/*
+				 * Is a valid video file
+				 */
+				
+				if(preg_match("/(.*?)[\s]+(CD|Part)[\s]*[\d]+$/i", $path_parts['filename'], $matches)) {
+					/*
+					 * Is part of a multi-part movie file
+					 */
+					similar_text($matches[1], $this->last_file, $p);
+					//if($this->debug) echo $matches[1]." vs ".$this->last_file." = ".$p."\n";
+					if($p == 100) {
+						/*
+						 * Movie is in multiple parts
+						 */
+					} else {
+						/*
+						 * New Movie for the list
+						 */
+						$count++;
+						$list[] = $matches[1];
+						$this->last_file = $matches[1];
+						if($this->debug) echo $this->last_file."\n";
+					}
+				} else if (in_array($path_parts['extension'], $this->sub_extensions)) {
+					/*
+					 * Is a valid subtitles file
+					 */
+					$list[count($list)] .= " [with Sub Titles]";
+				} else {
+					//similar_text($path_parts['filename'], $this->last_file, $p);
+					//if($this->debug) echo $path_parts['filename']." vs ".$this->last_file." = ".$p."\n";
+					
+					$count++;
+					$list[] = $path_parts['filename'];
+					$this->last_file = $path_parts['filename'];
+					if($this->debug) echo $this->last_file."\n";
+				}
+				
+			} else {
+				/*
+				 * NOT a valid file type
+				 */
+			}
+			
+		}
+		return $list;
+	}
+	
+	
+	function printList($list, $line_start = '')
+	{
+		$return = '';
+		
+		foreach ($list as $item) {
+			if(is_array($item)) {
+				$return .= $item['title']." (".$item['count'].")\n";
+				$return .= $this->printList($item['list'], $line_start.'- ');
+			} else {
+				$return .= $line_start.$item."\n";
+			}
+		}
+		
+		return $return;
+	}
+	/**
+	 * save a file
+	 * 
+	 * @param string $file file name with path
+	 * @param string $data file contents to be saved
+	 * 
+	 * @return null
+	 */
+	function save($file, $data)
+	{
+		$fh = fopen($file, 'w') or print("can't open file");
+		fwrite($fh, $data);
+		fclose($fh);
+	}
+}
+
+?>
