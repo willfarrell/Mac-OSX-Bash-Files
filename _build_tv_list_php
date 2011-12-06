@@ -1,0 +1,165 @@
+#!/usr/bin/php
+<?php
+
+/*
+Folder Structure
+
+Show Name
+- Season #
+-- episode.avi
+*/
+
+$dir = "/Volumes/Media/TV Shows";
+$file = "_movie_list.txt";
+
+$make = new Make_Tv_List;
+$count = array('shows' => 0, 'seasons' => 0, 'episodes' => 0);
+$list = $make->showDir($dir, $count);
+
+$data = "Total TV Shows: {$count['shows']}\n\n";
+echo $data;
+$data .= $make->printList($list);
+$make->save($dir."/".$file, $data);
+
+class Make_Tv_List
+{
+	var $version = "0.0.1";
+	var $debug = true;
+	
+	// Extentions list from http://en.wikipedia.org/wiki/List_of_file_formats#Video
+	var $video_extensions = array('aaf', '3gp', 'avi', 'flv', 'm1v', 'm2v', 'm4v', 'mkv', 'mov', 'mpeg', 'mpg', 'ogg', 'wmv');
+	var $show_str_length = 0;
+	
+	/**
+	 * search dir and make list
+	 * 
+	 * @param string $path a directory path
+	 * 
+	 * @return null
+	 */
+	function showDir($path, &$count)
+	{
+		$list = array();
+		$dir = scandir($path);
+		$size = count($dir);
+		for($i=0; $i<$size; $i++) {
+			// ignore symbolic links and hidden files
+			if ( preg_match("/^\./", $dir[$i]) ) {
+				continue;
+			}
+			$file_full_path = $path."/".$dir[$i];
+			$path_parts = pathinfo($dir[$i]);
+			
+			if (is_dir($file_full_path)) {
+				/*
+				 * Is a directory, aka a show
+				 */
+				
+				$show_list = $this->seasonDir($file_full_path);
+				$list[$dir[$i]] = $show_list;
+				
+				$count['shows']++;
+				$count['seasons'] += count($show_list);
+				$count['episodes'] += array_sum($show_list);
+				$this->show_str_length = (strlen($dir[$i]) > $this->show_str_length) ? strlen($dir[$i]) : $this->show_str_length;
+				echo $dir[$i]."\n";
+			} else {
+				/*
+				 * NOT a valid file type
+				 */
+			}
+			
+		}
+		return $list;
+	}
+	
+	function seasonDir($path)
+	{
+		$list = array();
+		$dir = scandir($path);
+		$size = count($dir);
+		for($i=0; $i<$size; $i++) {
+			// ignore symbolic links and hidden files
+			if ( preg_match("/^\./", $dir[$i]) ) {
+				continue;
+			}
+			$file_full_path = $path."/".$dir[$i];
+			$path_parts = pathinfo($dir[$i]);
+			
+			if (is_dir($file_full_path)) {
+				/*
+				 * Is a directory, aka a season
+				 */
+				$episode_count = 0;
+				$episode_count = $this->episodeDir($file_full_path);
+				$list[$path_parts['filename']] = $episode_count;		
+			} else if (in_array($path_parts['extension'], $this->video_extensions)) {
+				/*
+				 * Movie
+				 */
+				
+			} else {
+				/*
+				 * NOT a valid file type
+				 */
+			}
+			
+		}
+		return $list;
+	}
+	
+	function episodeDir($path)
+	{
+		$count = 0;
+		$dir = scandir($path);
+		$size = count($dir);
+		for($i=0; $i<$size; $i++) {
+			// ignore symbolic links and hidden files
+			if ( preg_match("/^\./", $dir[$i]) ) {
+				continue;
+			}
+			$file_full_path = $path."/".$dir[$i];
+			$path_parts = pathinfo($dir[$i]);
+			
+			if (in_array($path_parts['extension'], $this->video_extensions)) {
+				/*
+				 * Is a video file, aka an episode
+				 */
+				$count++;		
+			} else {
+				/*
+				 * NOT a valid file type
+				 */
+			}
+			
+		}
+		return $count;
+	}
+	
+	function printList($list, $line_start = '')
+	{
+		$return = '';
+		
+		foreach ($list as $key => $value) {
+			$return .= str_pad($key, $this->show_str_length)."\t(".count($value)." Seasons,\t".array_sum($value)." Episodes)\n";
+		}
+		
+		return $return;
+	}
+	/**
+	 * save a file
+	 * 
+	 * @param string $file file name with path
+	 * @param string $data file contents to be saved
+	 * 
+	 * @return null
+	 */
+	function save($file, $data)
+	{
+		$fh = fopen($file, 'w') or print("can't open file");
+		fwrite($fh, $data);
+		fclose($fh);
+	}
+}
+
+?>
