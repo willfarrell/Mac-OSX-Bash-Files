@@ -9,17 +9,21 @@ Show Name
 -- episode.avi
 */
 
-$dir = "/Volumes/Media/TV Shows";
-$file = "_movie_list.txt";
+$dirs = array(
+	"/Volumes/Media/TV Shows",
+);
+$file = "_tv_list.txt";
 
-$make = new Make_Tv_List;
-$count = array('shows' => 0, 'seasons' => 0, 'episodes' => 0);
-$list = $make->showDir($dir, $count);
-
-$data = "Total TV Shows: {$count['shows']}\n\n";
-echo $data;
-$data .= $make->printList($list);
-$make->save($dir."/".$file, $data);
+foreach ($dirs as $dir) {
+	$make = new Make_Tv_List;
+	$count = array('shows' => 0, 'seasons' => 0, 'episodes' => 0);
+	$list = $make->showDir($dir, $count);
+	
+	$data = "Total TV Shows: {$count['shows']}\n\n";
+	echo $data;
+	$data .= $make->printList($list);
+	$make->save($dir."/".$file, $data);
+}
 
 class Make_Tv_List
 {

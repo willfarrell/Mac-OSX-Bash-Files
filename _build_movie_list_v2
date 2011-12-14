@@ -1,18 +1,23 @@
 #!/usr/bin/php
 <?php
 
-$dir = "/Volumes/Media/Movies";
+$dirs = array(
+	"/Volumes/Media/Movies",
+);
 $file = "_movie_list.txt";
 
-$make = new Make_Movie_List;
-$count = 0;
-$list = $make->searchDir($dir, $count);
+foreach ($dirs as $dir) {
+	$make = new Make_Movie_List;
+	$count = 0;
+	$list = $make->searchDir($dir, $count);
+	
+	$data = "Total Movies: $count\n\n";
+	echo $data;
+	$data .= $make->printList($list);
+	
+	$make->save($dir."/".$file, $data);
+}
 
-$data = "Total Movies: $count\n\n";
-echo $data;
-$data .= $make->printList($list);
-
-$make->save($dir."/".$file, $data);
 
 class Make_Movie_List
 {
