@@ -9,21 +9,42 @@ Show Name
 -- episode.avi
 */
 
+
+// __FILE__
+$path_parts = pathinfo(__FILE__);
+
 $dirs = array(
 	"/Volumes/Media/TV Shows",
 );
 $file = "_tv_list.txt";
 
+// Global settings
+$global_list = array();
+$global_count = 0;
+
+// script run
+$make = new Make_Tv_List;
 foreach ($dirs as $dir) {
-	$make = new Make_Tv_List;
+	
 	$count = array('shows' => 0, 'seasons' => 0, 'episodes' => 0);
 	$list = $make->showDir($dir, $count);
+	
+	$global_list = array_merge($global_list, $list);
+	$global_count += $count['shows'];
 	
 	$data = "Total TV Shows: {$count['shows']}\n\n";
 	echo $data;
 	$data .= $make->printList($list);
 	$make->save($dir."/".$file, $data);
 }
+
+$data = "Total TV Shows: {$global_count}\n\n";
+echo $data;
+
+uksort($global_list, "strnatcasecmp");
+
+$data .= $make->printList($global_list);
+$make->save($path_parts['dirname']."/".$file, $data);
 
 class Make_Tv_List
 {
@@ -60,13 +81,13 @@ class Make_Tv_List
 				 */
 				
 				$show_list = $this->seasonDir($file_full_path);
-				$list[$dir[$i]] = $show_list;
+				$list[$dir["$i"]] = $show_list;
 				
 				$count['shows']++;
 				$count['seasons'] += count($show_list);
 				$count['episodes'] += array_sum($show_list);
 				$this->show_str_length = (strlen($dir[$i]) > $this->show_str_length) ? strlen($dir[$i]) : $this->show_str_length;
-				echo $dir[$i]."\n";
+				echo $dir["$i"]."\n";
 			} else {
 				/*
 				 * NOT a valid file type
@@ -143,9 +164,10 @@ class Make_Tv_List
 	function printList($list, $line_start = '')
 	{
 		$return = '';
-		
 		foreach ($list as $key => $value) {
-			$return .= str_pad($key, $this->show_str_length)."\t(".count($value)." Seasons,\t".array_sum($value)." Episodes)\n";
+			$return .= str_pad($key, $this->show_str_length)."\t("
+					.str_pad(count($value), 2, " ", STR_PAD_LEFT)." Seasons,\t"
+					.str_pad(array_sum($value), 3, " ", STR_PAD_LEFT)." Episodes)\n";
 		}
 		
 		return $return;
